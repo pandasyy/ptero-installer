@@ -4,69 +4,99 @@ set -e
 
 ######################################################################################
 #                                                                                    #
-# Project 'pandasyy'                                                                  #
+# Project: pandasyy                                                                  #
 #                                                                                    #
-# Based on 'pterodactyl-installer'                                                   #
-# Copyright (C) 2018 - 2025, Vilhelm Prytz                                         #
+# Server management installer                                                       #
 #                                                                                    #
-#   This program is free software: you can redistribute it and/or modify             #
-#   it under the terms of the GNU General Public License as published by             #
-#   the Free Software Foundation, either version 3 of the License, or                #
-#   (at your option) any later version.                                              #
+# Copyright (C) 2025, Pandasyy                                                      #
+#                                                                                    #
+# This program is free software: you can redistribute it and/or modify               #
+# it under the terms of the GNU General Public License as published by               #
+# the Free Software Foundation, either version 3 of the License, or                  #
+# (at your option) any later version.                                                #
+#                                                                                    #
+# This program is distributed in the hope that it will be useful,                    #
+# but WITHOUT ANY WARRANTY; without even the implied warranty of                     #
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                      #
+# GNU General Public License for more details.                                       #
+#                                                                                    #
+# You should have received a copy of the GNU General Public License                   #
+# along with this program. If not, see <https://www.gnu.org/licenses/>.               #
 #                                                                                    #
 ######################################################################################
 
-export GITHUB_SOURCE="v1.2.0"
-export SCRIPT_RELEASE="v1.2.0"
+# =========================
+# Pandasyy Configuration
+# =========================
+
+export GITHUB_SOURCE="v1.0.0"
+export SCRIPT_RELEASE="v1.0.0"
+
+# You can change this later to YOUR repo
 export GITHUB_BASE_URL="https://raw.githubusercontent.com/pterodactyl-installer/pterodactyl-installer"
 
-LOG_PATH="/var/log/pandasyy.log"
+LOG_PATH="/var/log/pandasyy-installer.log"
 
-# check for curl
-if ! [ -x "$(command -v curl)" ]; then
-  echo "* curl is required in order for this script to work."
-  echo "* install using apt (Debian and derivatives) or yum/dnf (CentOS)"
+# =========================
+# Dependency Check
+# =========================
+
+if ! command -v curl >/dev/null 2>&1; then
+  echo "* pandasyy requires curl to run."
+  echo "* Install using apt (Debian/Ubuntu) or yum/dnf (RHEL/CentOS)"
   exit 1
 fi
 
-# Always remove lib.sh, before downloading it
-[ -f /tmp/lib.sh ] && rm -rf /tmp/lib.sh
-curl -sSL -o /tmp/lib.sh "$GITHUB_BASE_URL"/master/lib/lib.sh
-# shellcheck source=lib/lib.sh
-source /tmp/lib.sh
+# =========================
+# Load Core Library
+# =========================
 
-execute() {
-  echo -e "\n\n* pandasyy $(date) \n\n" >>"$LOG_PATH"
+[ -f /tmp/pandasyy-lib.sh ] && rm -rf /tmp/pandasyy-lib.sh
+curl -sSL -o /tmp/pandasyy-lib.sh "$GITHUB_BASE_URL"/master/lib/lib.sh
+# shellcheck source=/tmp/pandasyy-lib.sh
+source /tmp/pandasyy-lib.sh
+
+# =========================
+# Core Executor
+# =========================
+
+pandasyy_execute() {
+  echo -e "\n\n* pandasyy installer run — $(date)\n\n" >>"$LOG_PATH"
 
   [[ "$1" == *"canary"* ]] && export GITHUB_SOURCE="master" && export SCRIPT_RELEASE="canary"
+
   update_lib_source
   run_ui "${1//_canary/}" |& tee -a "$LOG_PATH"
 
   if [[ -n $2 ]]; then
-    echo -e -n "* Installation of $1 completed. Do you want to proceed to $2 installation? (y/N): "
+    echo -n "* $1 completed. Continue with $2 installation? (y/N): "
     read -r CONFIRM
-    if [[ "$CONFIRM" =~ [Yy] ]]; then
-      execute "$2"
+    if [[ "$CONFIRM" =~ ^[Yy]$ ]]; then
+      pandasyy_execute "$2"
     else
-      error "Installation of $2 aborted."
+      error "pandasyy: $2 installation cancelled."
       exit 1
     fi
   fi
 }
 
-welcome ""
+# =========================
+# UI
+# =========================
+
+welcome "pandasyy installer"
 
 done=false
-while [ "$done" == false ]; do
+while [ "$done" = false ]; do
   options=(
-    "Install the panel"
+    "Install Panel"
     "Install Wings"
-    "Install both [0] and [1] on the same machine (wings script runs after panel)"
+    "Install Panel + Wings (same machine)"
 
-    "Install panel with canary version of the script (may be broken!)"
-    "Install Wings with canary version of the script (may be broken!)"
-    "Install both [3] and [4] on the same machine (wings script runs after panel)"
-    "Uninstall panel or wings with canary version of the script (may be broken!)"
+    "Install Panel (canary)"
+    "Install Wings (canary)"
+    "Install Panel + Wings (canary)"
+    "Uninstall components (canary)"
   )
 
   actions=(
@@ -80,22 +110,28 @@ while [ "$done" == false ]; do
     "uninstall_canary"
   )
 
-  output "What would you like to do?"
+  output "pandasyy — select an option:"
 
   for i in "${!options[@]}"; do
     output "[$i] ${options[$i]}"
   done
 
-  echo -n "* Input 0-$((${#actions[@]} - 1)): "
+  echo -n "* Choice (0-${#actions[@]}): "
   read -r action
 
-  [ -z "$action" ] && error "Input is required" && continue
+  [ -z "$action" ] && error "Input required" && continue
 
-  valid_input=("$(for ((i = 0; i <= ${#actions[@]} - 1; i++)); do echo "$i"; done)")
-  [[ ! " ${valid_input[*]} " =~ ${action} ]] && error "Invalid option"
-  [[ " ${valid_input[*]} " =~ ${action} ]] && done=true && IFS=";" read -r i1 i2 <<<"${actions[$action]}" && execute "$i1" "$i2"
+  if [[ "$action" =~ ^[0-9]+$ ]] && [ "$action" -lt "${#actions[@]}" ]; then
+    done=true
+    IFS=";" read -r a1 a2 <<<"${actions[$action]}"
+    pandasyy_execute "$a1" "$a2"
+  else
+    error "Invalid option"
+  fi
 done
 
-# Remove lib.sh so the newest version is downloaded next run
-rm -rf /tmp/lib.sh
+# =========================
+# Cleanup
+# =========================
 
+rm -rf /tmp/pandasyy-lib.sh
