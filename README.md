@@ -1,34 +1,32 @@
-# Arsdactyl Pterodactyl Installer
+# 🐼 Pandasyy Ptero Installer
 
-This is a fully automated installation script for **Pterodactyl Panel and Wings**, customized to use any username and configured with the project name **arsdactyl**.
+A modern, clean, and beginner-friendly installer for  
+**Pterodactyl Panel & Wings**.
 
-It allows easy setup on AWS VPS or any Linux server.
-
----
-
-## Features
-
-- Installs **Pterodactyl Panel** with PHP 8.3, MariaDB, Nginx, and Redis.
-- Installs **Wings daemon** for managing game servers.
-- Fully supports **any installation username** (not just root).
-- Configures **systemd services** for panel queues and Wings.
-- Prompts for database and admin credentials securely.
-- Sets up Nginx configuration ready for SSL.
+Maintained by **Pandasyy**.
 
 ---
 
-## Requirements
+## ✨ Features
 
-- Linux VPS (Ubuntu 22.04 recommended)
-- Sudo access
-- Open ports 80, 443, 8080 (default Wings port)
-- Non-root user preferred (the installer allows custom username)
+- 🚀 One-command installation
+- 🎨 Clean & branded UI
+- 📦 Supports Panel & Wings
+- 🧪 Canary (latest) support
+- 📝 Automatic logging
+- 🔒 GPL-licensed & transparent
 
 ---
 
-## Quick Installation
+## 📦 Supported Systems
 
-Run the installer in **one command**:
+- Ubuntu 20.04 / 22.04
+- Debian 11 / 12
+- RHEL / AlmaLinux / Rocky Linux (tested variants)
+
+---
+
+## ⚡ Quick Install
 
 ```bash
-curl -sSL https://github.com/not-arslan/ptero-installer/raw/main/main-installer.sh | bash
+bash <(curl -s https://raw.githubusercontent.com/pandasyy/ptero-installer/main/main-installer.sh)
