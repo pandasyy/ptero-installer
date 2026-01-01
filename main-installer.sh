@@ -2,141 +2,129 @@
 
 set -e
 
-######################################################################################
-#                                                                                    #
-#  pandasyy-installer                                                                #
-#                                                                                    #
-#  Modern installer for Pterodactyl Panel & Wings                                    #
-#                                                                                    #
-#  Maintained by Pandasyy                                                            #
-#                                                                                    #
-#  License: GNU GPL v3 or later                                                       #
-#                                                                                    #
-######################################################################################
-
-# =========================
-# Branding
-# =========================
+############################################
+# Pandasyy Installer
+# Author: Pandasyy
+# Version: 1.0.0
+# License: GPLv3
+############################################
 
 APP_NAME="pandasyy-installer"
-APP_VERSION="v1.0.0"
-LOG_PATH="/var/log/pandasyy-installer.log"
+VERSION="1.0.0"
+LOG_FILE="/var/log/pandasyy-installer.log"
 
-# =========================
-# GitHub Source
-# =========================
-
-export GITHUB_SOURCE="main"
-export SCRIPT_RELEASE="$APP_VERSION"
-export GITHUB_BASE_URL="https://raw.githubusercontent.com/pandasyy/ptero-installer"
-
-# =========================
-# Colors
-# =========================
-
+# ---------- Colors ----------
 GREEN="\033[1;32m"
 BLUE="\033[1;34m"
 RED="\033[1;31m"
+YELLOW="\033[1;33m"
 NC="\033[0m"
 
-# =========================
-# Banner
-# =========================
-
+# ---------- Banner ----------
 clear
 echo -e "${BLUE}"
 cat << "EOF"
  ██████╗  █████╗ ███╗   ██╗██████╗  █████╗ ███████╗██╗   ██╗██╗   ██╗
  ██╔══██╗██╔══██╗████╗  ██║██╔══██╗██╔══██╗██╔════╝╚██╗ ██╔╝╚██╗ ██╔╝
- ██████╔╝███████║██╔██╗ ██║██║  ██║███████║███████╗ ╚████╔╝  ╚████╔╝ 
- ██╔═══╝ ██╔══██║██║╚██╗██║██║  ██║██╔══██║╚════██║  ╚██╔╝    ╚██╔╝  
- ██║     ██║  ██║██║ ╚████║██████╔╝██║  ██║███████║   ██║       ██║   
- ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝ ╚═╝  ╚═╝╚══════╝   ╚═╝       ╚═╝   
+ ██████╔╝███████║██╔██╗ ██║██║  ██║███████║███████╗ ╚████╔╝  ╚████╔╝
+ ██╔═══╝ ██╔══██║██║╚██╗██║██║  ██║██╔══██║╚════██║  ╚██╔╝    ╚██╔╝
+ ██║     ██║  ██║██║ ╚████║██████╔╝██║  ██║███████║   ██║       ██║
+ ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝ ╚═╝  ╚═╝╚══════╝   ╚═╝       ╚═╝
 EOF
 echo -e "${NC}"
-echo -e "${GREEN}${APP_NAME} ${APP_VERSION}${NC}"
+echo -e "${GREEN}${APP_NAME} v${VERSION}${NC}"
 echo ""
 
-# =========================
-# Dependency Check
-# =========================
+# ---------- Helpers ----------
+log() {
+  echo "[$(date)] $1" | tee -a "$LOG_FILE"
+}
 
-if ! command -v curl >/dev/null 2>&1; then
-  echo -e "${RED}✖ curl is required but not installed.${NC}"
-  exit 1
-fi
+pause() {
+  read -rp "Press ENTER to continue..."
+}
 
-# =========================
-# Load Core Library
-# =========================
-
-LIB_PATH="/tmp/pandasyy-lib.sh"
-[ -f "$LIB_PATH" ] && rm -f "$LIB_PATH"
-
-curl -sSL -o "$LIB_PATH" "$GITHUB_BASE_URL/main/lib/lib.sh"
-source "$LIB_PATH"
-
-# =========================
-# Executor
-# =========================
-
-pandasyy_run() {
-  echo -e "\n[$(date)] Running: $1" >>"$LOG_PATH"
-
-  [[ "$1" == *"canary"* ]] && export GITHUB_SOURCE="main"
-
-  update_lib_source
-  run_ui "${1//_canary/}" |& tee -a "$LOG_PATH"
-
-  if [[ -n "$2" ]]; then
-    read -rp "→ Continue with $2? (y/N): " CONFIRM
-    [[ "$CONFIRM" =~ ^[Yy]$ ]] && pandasyy_run "$2"
+require_root() {
+  if [ "$EUID" -ne 0 ]; then
+    echo -e "${RED}✖ Please run as root${NC}"
+    exit 1
   fi
 }
 
-# =========================
-# Menu
-# =========================
-
-welcome "pandasyy installer"
-
-done=false
-while [ "$done" = false ]; do
-  options=(
-    "Install Panel"
-    "Install Wings"
-    "Install Panel + Wings"
-    "Install Panel (Canary)"
-    "Install Wings (Canary)"
-    "Install Panel + Wings (Canary)"
-    "Uninstall (Canary)"
-  )
-
-  actions=(
-    "panel"
-    "wings"
-    "panel;wings"
-    "panel_canary"
-    "wings_canary"
-    "panel_canary;wings_canary"
-    "uninstall_canary"
-  )
-
-  output "Select an option:"
-
-  for i in "${!options[@]}"; do
-    output "[$i] ${options[$i]}"
+check_deps() {
+  for pkg in curl sudo; do
+    if ! command -v "$pkg" >/dev/null 2>&1; then
+      echo -e "${RED}✖ Missing dependency: $pkg${NC}"
+      exit 1
+    fi
   done
+}
 
-  read -rp "> " action
+# ---------- Fake Installers (placeholders) ----------
+install_panel() {
+  log "Starting Panel installation"
+  echo -e "${YELLOW}Installing Panel...${NC}"
+  sleep 2
+  echo -e "${GREEN}✔ Panel installed (placeholder)${NC}"
+  log "Panel installation finished"
+}
 
-  if [[ "$action" =~ ^[0-9]+$ ]] && [ "$action" -lt "${#actions[@]}" ]; then
-    done=true
-    IFS=";" read -r a1 a2 <<<"${actions[$action]}"
-    pandasyy_run "$a1" "$a2"
-  else
-    error "Invalid option"
-  fi
+install_wings() {
+  log "Starting Wings installation"
+  echo -e "${YELLOW}Installing Wings...${NC}"
+  sleep 2
+  echo -e "${GREEN}✔ Wings installed (placeholder)${NC}"
+  log "Wings installation finished"
+}
+
+uninstall_all() {
+  log "Starting uninstall"
+  echo -e "${RED}Uninstalling components...${NC}"
+  sleep 2
+  echo -e "${GREEN}✔ Uninstall complete (placeholder)${NC}"
+  log "Uninstall finished"
+}
+
+# ---------- Menu ----------
+require_root
+check_deps
+
+while true; do
+  echo ""
+  echo "Select an option:"
+  echo "  [1] Install Panel"
+  echo "  [2] Install Wings"
+  echo "  [3] Install Panel + Wings"
+  echo "  [4] Uninstall"
+  echo "  [0] Exit"
+  echo ""
+
+  read -rp "> " choice
+
+  case "$choice" in
+    1)
+      install_panel
+      pause
+      ;;
+    2)
+      install_wings
+      pause
+      ;;
+    3)
+      install_panel
+      install_wings
+      pause
+      ;;
+    4)
+      uninstall_all
+      pause
+      ;;
+    0)
+      echo -e "${GREEN}Goodbye!${NC}"
+      exit 0
+      ;;
+    *)
+      echo -e "${RED}Invalid option${NC}"
+      ;;
+  esac
 done
-
-rm -f "$LIB_PATH"
